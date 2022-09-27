@@ -26,12 +26,9 @@ int i = 0;
 int motor = 0;
 int mot_speed_char1 = 0;
 int mot_speed_char2 = 0;
-int refresh_mot_speed_char1 = 0;
-int refresh_mot_speed_char2 = 0;
+int step_mot_delay = 0;
 long start_time = 0;
 
-// 2-wire basic config, microstepping is hardwired on the driver with SLEEP
-BasicStepperDriver stepper(MOTOR_STEPS, DIR, STEP, SLEEP);
 
 
 void setup() {
@@ -73,15 +70,8 @@ void loop() {
   }
 
 if (motor == 5){
-  int dig_speed = (int)((0.1 * (mot_speed_char1) + 0.01 * (mot_speed_char2))* 255);
-  if (dig_speed > 0){
-    start_time = millis();
-    refresh_mot_speed_char1 = mot_speed_char1;
-    refresh_mot_speed_char2 = mot_speed_char2;
-  }
-  if (dig_speed == 0){
-    start_time = 0;
-  }
+  step_mot_delay = (float)((10 * (mot_speed_char1) + 1 * (mot_speed_char2))/10);
+
 }
 
 if (motor != 0){
@@ -92,17 +82,10 @@ if (motor != 0){
   Serial.println(0);
 }
 
-
-if (start_time > 0){ //after 20 minutes find time difference and if above level, stop motor and restart for 30 minutes and reset timer
-  long current_time = millis();
-  long time_difference = current_time - start_time;
-  if (time_difference > 1200000){
-      mot_run(5, 0, 0);
-      delay(10);
-      mot_run(5, refresh_mot_speed_char1, refresh_mot_speed_char2);
-      start_time = millis();
-  }
-}
+//digitalWrite(13, HIGH);
+digitalWrite(12, HIGH);
+delay(step_mot_delay);
+digitalWrite(12, LOW);
 
 
 
@@ -133,15 +116,10 @@ void mot_run(int motor, int mot_speed_char1, int mot_speed_char2){
   }
   if(motor == 5){  // Doesn't turn on permanately. Turns motor on at fixed speed for 30 minutes. 
     if(dig_speed == 0){
-        stepper.stop();
-        stepper.disable();  
+      digitalWrite(13, LOW);
     }
-    
     if(dig_speed > 0){
-      long thirty_min_steps = dig_speed*200*60;
-      stepper.begin(dig_speed, MICROSTEPS);
-      stepper.enable();
-      stepper.startMove(thirty_min_steps); 
+      digitalWrite(13, HIGH);
     }
   }  
 }
